@@ -13,20 +13,22 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
+          # Устанавливаем zstd, необходимый для распаковки образов OpenWrt 25.x
           sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip qemu-utils dos2unix zstd
 
-      - name: Download OpenWrt Image Builder (25.12.5)
+      - name: Download OpenWrt Image Builder (25.12.4)
         run: |
-          # Скачиваем актуальный релиз 25.12.5 для архитектуры mediatek/filogic
+          # Скачиваем официальный Image Builder версии 25.12.4 для архитектуры mediatek/filogic
           wget https://openwrt.org
-          tar --zstd -xf openwrt-imagebuilder-25.12.5-mediatek-filogic.Linux-x86_64.tar.zst
-          mv openwrt-imagebuilder-25.12.5-mediatek-filogic.Linux-x86_64 imagebuilder
+          tar --zstd -xf openwrt-imagebuilder-25.12.4-mediatek-filogic.Linux-x86_64.tar.zst
+          mv openwrt-imagebuilder-25.12.4-mediatek-filogic.Linux-x86_64 imagebuilder
 
       - name: Copy and fix custom files
         run: |
           mkdir -p imagebuilder/files
           if [ -d "files" ]; then
             cp -r files/* imagebuilder/files/
+            # Очищаем пользовательские скрипты от возможных Windows-переносов (\r\n)
             find imagebuilder/files/ -type f -exec dos2unix {} \;
             chmod +x imagebuilder/files/etc/uci-defaults/*
           fi
@@ -34,18 +36,17 @@ jobs:
       - name: Add AmneziaWG Repository
         run: |
           cd imagebuilder
-          # Подключаем фид пакетов, собранных под ветку 25.12 для архитектуры filogic
+          # Подключаем внешний репозиторий с kmod-модулями AmneziaWG
           echo "src/gz amneziawg_repo https://githubusercontent.com" >> repositories.conf
 
       - name: Compile Firmware
         run: |
           cd imagebuilder
-          # Сборка под профиль cudy_wr3000s-v1
+          # Запуск компиляции sysupgrade-образа для профиля cudy_wr3000s-v1
           make image PROFILE=cudy_wr3000s-v1 PACKAGES="luci-i18n-base-ru luci-i18n-adblock-fast-ru ttyd kmod-amneziawg amneziawg-tools" FILES="files/"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Cudy-WR3000S-Firmware-25.12.5
+          name: Cudy-WR3000S-Firmware-25.12.4
           path: imagebuilder/bin/targets/mediatek/filogic/*sysupgrade.bin
-
