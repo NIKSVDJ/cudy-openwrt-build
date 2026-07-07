@@ -1,0 +1,165 @@
+#!/bin/sh
+
+# 1. Изменение языка системы на русский
+uci set luci.main.lang='ru'
+uci commit luci
+
+# 2. Изменение MAC-адреса интерфейса WAN
+uci set network.wan.macaddr='04:71:53:7A:5F:3B'
+uci commit network
+
+# 3. Создание беспроводной сети Wi-Fi на всех частотах
+for radio in $(uci show wireless | grep =wifi-device | cut -d. -f2 | cut -d=-f1); do
+    uci set wireless.${radio}.disabled='0'
+done
+
+for vif in $(uci show wireless | grep =wifi-iface | cut -d. -f2 | cut -d=-f1); do
+    uci set wireless.${vif}.ssid='201'
+    uci set wireless.${vif}.encryption='psk2'
+    uci set wireless.${vif}.key='Nksvdj131186!!'
+done
+uci commit wireless
+
+# Перезапуск сетевых служб
+/etc/init.d/network restart
+/etc/init.d/wireless reload
+
+# Ожидание поднятия интернет-соединения
+echo "Waiting for internet connection..."
+until ping -c 1 -W 3 1.1.1.1 >/dev/null 2>&1; do
+    sleep 5
+done
+
+# 4. Установка AmneziaWG
+wget -O - https://githubusercontent.com | sh
+sleep 15
+
+# Настройка адаптера wg0
+uci set network.wg0=interface
+uci set network.wg0.proto='amneziawg'
+uci set network.wg0.private_key='VhUQPVOSKf6DVo4xlUL3SxrCRRadmVcraftobQDzoTk='
+uci set network.wg0.listen_port='51820'
+uci add_list network.wg0.addresses='10.8.1.2/32'
+uci add_list network.wg0.dns='1.1.1.1'
+uci add_list network.wg0.dns='1.0.0.1'
+uci set network.wg0.jc='5'
+uci set network.wg0.jmin='10'
+uci set network.wg0.jmax='50'
+uci set network.wg0.s1='23'
+uci set network.wg0.s2='52'
+uci set network.wg0.s3='61'
+uci set network.wg0.s4='19'
+uci set network.wg0.h1='963021239'
+uci set network.wg0.h2='1430326882'
+uci set network.wg0.h3='1877397047'
+uci set network.wg0.h4='2100843197'
+
+uci set network.wg0_peer=amneziawg_wg0
+uci set network.wg0_peer.public_key='ExcbYIDj5Bah0k9BLzijUp24PMWoZVPai0DuVyLNA3E='
+uci set network.wg0_peer.preshared_key='xYjr3eABBJU1AMcn783v4lmAxhW0nx/feWSo1n3Hzp0='
+uci set network.wg0_peer.endpoint_host='46.29.162.239'
+uci set network.wg0_peer.endpoint_port='32470'
+uci set network.wg0_peer.persistent_keepalive='25'
+uci add_list network.wg0_peer.allowed_ips='0.0.0.0/0'
+
+# Настройка адаптера wg1
+uci set network.wg1=interface
+uci set network.wg1.proto='amneziawg'
+uci set network.wg1.private_key='hHy2B4Hd1dRThcZaMULAIM+Ab29wxD6QpELQ7GmrlKo='
+uci set network.wg1.listen_port='51821'
+uci add_list network.wg1.addresses='10.8.1.6/32'
+uci add_list network.wg1.dns='1.1.1.1'
+uci add_list network.wg1.dns='1.0.0.1'
+uci set network.wg1.jc='6'
+uci set network.wg1.jmin='10'
+uci set network.wg1.jmax='50'
+uci set network.wg1.s1='17'
+uci set network.wg1.s2='80'
+uci set network.wg1.s3='39'
+uci set network.wg1.s4='9'
+uci set network.wg1.h1='1789556860'
+uci set network.wg1.h2='2054801778'
+uci set network.wg1.h3='2092193951'
+uci set network.wg1.h4='2143499563'
+
+uci set network.wg1_peer=amneziawg_wg1
+uci set network.wg1_peer.public_key='mhuuQ52DhUh08NBgGpmrPrGxoYRcLGuRK2/SWdx6USU='
+uci set network.wg1_peer.preshared_key='aGiRbeTAFKUc0pM9SHxeBZD/jGvbSMS2ssHrf79SGso='
+uci set network.wg1_peer.endpoint_host='46.34.60.174'
+uci set network.wg1_peer.endpoint_port='47623'
+uci set network.wg1_peer.persistent_keepalive='25'
+uci add_list network.wg1_peer.allowed_ips='0.0.0.0/0'
+
+# Настройка адаптера wg2
+uci set network.wg2=interface
+uci set network.wg2.proto='amneziawg'
+uci set network.wg2.private_key='KTo5NmdoJzsfvPOh9lsTBZ9Idrp73Z8be9asbAWc/fk='
+uci set network.wg2.listen_port='51822'
+uci add_list network.wg2.addresses='10.8.1.7/32'
+uci add_list network.wg2.dns='1.1.1.1'
+uci add_list network.wg2.dns='1.0.0.1'
+uci set network.wg2.jc='6'
+uci set network.wg2.jmin='10'
+uci set network.wg2.jmax='50'
+uci set network.wg2.s1='17'
+uci set network.wg2.s2='80'
+uci set network.wg2.s3='39'
+uci set network.wg2.s4='9'
+uci set network.wg2.h1='1789556860'
+uci set network.wg2.h2='2054801778'
+uci set network.wg2.h3='2092193951'
+uci set network.wg2.h4='2143499563'
+
+uci set network.wg2_peer=amneziawg_wg2
+uci set network.wg2_peer.public_key='mhuuQ52DhUh08NBgGpmrPrGxoYRcLGuRK2/SWdx6USU='
+uci set network.wg2_peer.preshared_key='aGiRbeTAFKUc0pM9SHxeBZD/jGvbSMS2ssHrf79SGso='
+uci set network.wg2_peer.endpoint_host='46.34.60.174'
+uci set network.wg2_peer.endpoint_port='47623'
+uci set network.wg2_peer.persistent_keepalive='25'
+uci add_list network.wg2_peer.allowed_ips='0.0.0.0/0'
+
+uci commit network
+/etc/init.d/network restart
+sleep 15
+
+# 5. Установка Podkop
+wget -O - https://githubusercontent.com | sh
+sleep 15
+
+# Конфигурация Podkop
+uci del podkop.config.interfaces
+uci add_list podkop.config.interfaces='wg0'
+uci add_list podkop.config.interfaces='wg1'
+uci add_list podkop.config.interfaces='wg2'
+uci set podkop.config.mode='latency'
+
+uci del podkop.config.lists
+uci add_list podkop.config.lists='antizapret'
+uci set podkop.config.bypass_ru_torrent='1'
+uci commit podkop
+/etc/init.d/podkop restart
+
+# Включение панели YACD
+uci set podkop.config.yacd='1'
+uci commit podkop
+/etc/init.d/podkop reload
+
+# 6. Настройка adblock-fast
+uci set adblock-fast.config.enabled='1'
+uci set adblock-fast.config.dns='dnsmasq'
+uci set adblock-fast.config.force_dns='1'
+
+uci del adblock-fast.config.url_list
+uci add_list adblock-fast.config.url_list='https://adaway.org'
+uci add_list adblock-fast.config.url_list='https://firebog.net'
+uci add_list adblock-fast.config.url_list='https://firebog.net'
+uci commit adblock-fast
+
+# Планировщик обновлений в 00:00
+sed -i '/adblock-fast/d' /etc/crontabs/root
+echo "0 0 * * * /etc/init.d/adblock-fast reload" >> /etc/crontabs/root
+
+/etc/init.d/cron restart
+/etc/init.d/adblock-fast start
+
+exit 0
