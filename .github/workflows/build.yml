@@ -1,7 +1,7 @@
-name: Build OpenWrt for Cudy WR3000S
+name: Build OpenWrt for Cudy WR3000
 
 on:
-  workflow_dispatch: # Позволяет запускать сборку вручную кнопкой
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,33 +13,38 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip qemu-utils
-          
-      - name: Download OpenWrt Image Builder
-        run: |
-          # Скачиваем официальный Image Builder для архитектуры ramips/mt7621
-          # Ссылка указана на стабильную версию. При необходимости можно изменить версию в URL
-          wget https://openwrt.org
-          tar -xf openwrt-imagebuilder-23.05.5-ramips-mt7621.Linux-x86_64.tar.xz
-          mv openwrt-imagebuilder-23.05.5-ramips-mt7621.Linux-x86_64 imagebuilder
+          sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip qemu-utils dos2unix
 
-      - name: Copy custom files
+      - name: Download OpenWrt Image Builder (25.12.4)
         run: |
-          # Копируем наши скрипты настроек внутрь структуры Image Builder
+          # Скачиваем Image Builder 25.12.4 для актуальной архитектуры mediatek/filogic
+          wget https://openwrt.org
+          tar -xf openwrt-imagebuilder-25.12.4-mediatek-filogic.Linux-x86_64.tar.xz
+          mv openwrt-imagebuilder-25.12.4-mediatek-filogic.Linux-x86_64 imagebuilder
+
+      - name: Copy and fix custom files
+        run: |
           mkdir -p imagebuilder/files
           if [ -d "files" ]; then
             cp -r files/* imagebuilder/files/
+            find imagebuilder/files/ -type f -exec dos2unix {} \;
             chmod +x imagebuilder/files/etc/uci-defaults/*
           fi
+
+      - name: Add AmneziaWG Repository
+        run: |
+          # Интегрируем репозиторий сторонних пакетов AmneziaWG
+          cd imagebuilder
+          echo "src/gz amneziawg_repo https://githubusercontent.com" >> repositories.conf
 
       - name: Compile Firmware
         run: |
           cd imagebuilder
-          # Запуск сборки под конкретный профиль Cudy WR3000S v1 с вашими пакетами
-          make image PROFILE=cudy_wr3000s-v1 PACKAGES="luci-i18n-base-ru luci-i18n-adblock-fast-ru ttyd" FILES="files/"
+          # Компиляция под профиль cudy_wr3000s-v1 для платформы filogic
+          make image PROFILE=cudy_wr3000s-v1 PACKAGES="luci-i18n-base-ru luci-i18n-adblock-fast-ru ttyd kmod-amneziawg amneziawg-tools" FILES="files/"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Cudy-WR3000S-Firmware
-          path: imagebuilder/bin/targets/ramips/mt7621/*sysupgrade.bin
+          name: Cudy-WR3000S-Firmware-25.12.4
+          path: imagebuilder/bin/targets/mediatek/filogic/*sysupgrade.bin
